@@ -29,6 +29,7 @@
 - Установите зависимости `pip install -r requirements.txt`
 - Создаем `.env` файл по образцу в `.env.example`
 - Выполнить миграции `python manage.py makemigrations` и `python manage.py migrate`
+- Если планируете пользоваться admin-панелью выполните `python manage.py createsuperuser`
 - Для запуска выполните `python manage.py runserver`
 - Для запуска в Docker выполните `docker-compose up -d --build`
 - [Телеграм бот](https://github.com/AlexeyDemidow/tracking_tasks_tg_bot) выполнен отдельным проектом. Для его запуска клонируйте [репозиторий](https://github.com/AlexeyDemidow/tracking_tasks_tg_bot) и следуйте инструкции 
