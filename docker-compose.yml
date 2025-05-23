@@ -1,0 +1,84 @@
+services:
+  tracking_tasks_project:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tracking_tasks_project:latest
+    container_name: 'tracking_tasks_project'
+    restart: always
+    env_file:
+      - /.env
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: ["gunicorn", "-b", "0.0.0.0:8000", "tracking_tasks_project.wsgi:application"]
+    depends_on:
+      - redis
+
+
+  nginx:
+    container_name: nginx
+    working_dir: /tracking_tasks_project
+    image: nginx:stable-alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/:/etc/nginx/conf.d:ro
+    depends_on:
+      - tracking_tasks_project
+
+
+  redis:
+    container_name: redis
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+
+
+  celery_worker:
+    container_name: celery_worker
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tracking_tasks_project_worker:latest
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: celery -A tracking_tasks_project worker --loglevel=info -P eventlet
+    depends_on:
+      - redis
+    volumes:
+      - .:/tracking_tasks_project
+
+
+  celery_beat:
+    container_name: celery_beat
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tracking_tasks_project_beat:latest
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: celery -A tracking_tasks_project beat -l info
+    depends_on:
+      - redis
+    volumes:
+      - .:/tracking_tasks_project
+
+volumes:
+  redis_data:
